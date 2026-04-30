@@ -724,6 +724,19 @@ describe('supports http with nodejs', () => {
           });
         });
 
+      const isZstdSupported = typeof zlib.zstdCompress === 'function';
+      const zstdCompress = (value) =>
+        new Promise((resolve, reject) => {
+          zlib.zstdCompress(value, (error, compressed) => {
+            if (error) {
+              reject(error);
+              return;
+            }
+
+            resolve(compressed);
+          });
+        });
+
       for (const [typeName, zipped] of Object.entries({
         gzip: gzip(responseBody),
         GZIP: gzip(responseBody),
@@ -731,6 +744,7 @@ describe('supports http with nodejs', () => {
         deflate: deflate(responseBody),
         'deflate-raw': deflateRaw(responseBody),
         br: brotliCompress(responseBody),
+        ...(isZstdSupported ? { zstd: zstdCompress(responseBody) } : {}),
       })) {
         const type = typeName.split('-')[0];
 
