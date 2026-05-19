@@ -544,7 +544,7 @@ declare namespace axios {
           | LookupAddress
         >);
     withXSRFToken?: boolean | ((config: InternalAxiosRequestConfig) => boolean | undefined);
-    parseReviver?: (this: any, key: string, value: any, context?: { source: string }) => any;
+    parseReviver?: (this: any, key: string, value: any, context?: { source?: string }) => any;
     fetchOptions?:
       | Omit<RequestInit, 'body' | 'headers' | 'method' | 'signal'>
       | Record<string, any>;
@@ -552,6 +552,8 @@ declare namespace axios {
     http2Options?: Record<string, any> & {
       sessionTimeout?: number;
     };
+    formDataHeaderPolicy?: 'legacy' | 'content-only';
+    redact?: string[];
   }
 
   // Alias
