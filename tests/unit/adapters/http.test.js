@@ -727,6 +727,9 @@ describe('supports http with nodejs', () => {
   });
 
   describe('compression', async () => {
+    const isZstdSupported = typeof zlib.createZstdDecompress === 'function' &&
+      typeof zlib.zstdCompress === 'function';
+
     it('should support transparent gunzip', async () => {
       const data = {
         firstName: 'Fred',
@@ -828,6 +831,50 @@ describe('supports http with nodejs', () => {
       }
     });
 
+    it('should not advertise zstd by default', async () => {
+      let acceptEncoding;
+
+      const server = await startHTTPServer(
+        (req, res) => {
+          acceptEncoding = req.headers['accept-encoding'];
+          res.end('ok');
+        },
+        { port: SERVER_PORT }
+      );
+
+      try {
+        await axios.get(`http://localhost:${server.address().port}/`);
+        assert.strictEqual(acceptEncoding.includes('zstd'), false);
+      } finally {
+        await stopHTTPServer(server);
+      }
+    });
+
+    it('should advertise zstd when enabled and supported', async () => {
+      if (!isZstdSupported) {
+        return;
+      }
+
+      let acceptEncoding;
+
+      const server = await startHTTPServer(
+        (req, res) => {
+          acceptEncoding = req.headers['accept-encoding'];
+          res.end('ok');
+        },
+        { port: SERVER_PORT }
+      );
+
+      try {
+        await axios.get(`http://localhost:${server.address().port}/`, {
+          advertiseZstd: true,
+        });
+        assert.strictEqual(acceptEncoding.includes('zstd'), true);
+      } finally {
+        await stopHTTPServer(server);
+      }
+    });
+
     describe('algorithms', () => {
       const responseBody = 'str';
 
@@ -879,7 +926,6 @@ describe('supports http with nodejs', () => {
           });
         });
 
-      const isZstdSupported = typeof zlib.zstdCompress === 'function';
       const zstdCompress = (value) =>
         new Promise((resolve, reject) => {
           zlib.zstdCompress(value, (error, compressed) => {
